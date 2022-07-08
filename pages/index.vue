@@ -58,12 +58,15 @@ export default {
   computed: {
     filteredList() {
       return this.todoList.filter((todo) => {
+        // this could be separated to different methods or reworked to be more readable
+        // if completed filter selected do filter with it
         if (this.completedFilter !== null) {
           return (
             todo.title.includes(this.searchQuery) &&
             todo.completed === this.completedFilter
           )
         }
+        // if not do with search
         return todo.title.includes(this.searchQuery.trim())
       })
     },
