@@ -1,34 +1,96 @@
 <template>
-  <div>
-    <h1>
-      Lorem ipsum dolor sit amet consectetur adipisicing elit. Exercitationem,
-      odio nesciunt molestiae quod iure ea tempore assumenda cumque culpa
-      tempora magni at, impedit repellat sint commodi aliquam, quae ipsam? Quod,
-      dolor ipsum quae sint maxime accusamus, cumque nobis tempore dicta
-      similique voluptas mollitia reprehenderit praesentium nihil neque nulla
-      beatae sunt sit deserunt numquam et deleniti. Rerum inventore sint nihil,
-      deserunt optio quae corporis natus fuga at temporibus quam libero
-      doloribus quos officia tempora necessitatibus velit dignissimos, modi
-      facere iste ipsum! Amet, temporibus dolorum? Sint ducimus corporis nostrum
-      perferendis ipsam, vel voluptas minima? Aut deleniti odit id at, voluptate
-      nobis numquam. Repudiandae ex, delectus at aspernatur architecto excepturi
-      earum, ducimus recusandae hic consectetur eum quisquam repellat atque
-      reprehenderit saepe. Omnis dignissimos perspiciatis eaque repellendus
-      sint, quos minus autem modi maiores, beatae sed, voluptates ad. Ipsa porro
-      iste nulla tempora maiores, suscipit nemo culpa. Error facilis eligendi
-      nam provident quaerat hic saepe, esse expedita dolore aperiam quasi
-      eveniet quibusdam repellendus. Quis explicabo corrupti iusto, magni labore
-      atque alias unde enim qui molestiae at impedit voluptas eum distinctio,
-      consectetur voluptates fugit quo nulla vel dicta nobis! Assumenda magni,
-      magnam dolorem at, hic perferendis et tempore fugiat iusto provident earum
-      similique ad sit odit?
-    </h1>
+  <div class="container">
+    <div>
+      <input v-model="searchQuery" type="text" />
+      <label for="pageSize">Page Size: </label>
+      <select id="pageSize" v-model="pagination.pageSize" name="pageSize">
+        <option v-for="item in itemsPerPage" :key="item" :value="item">
+          {{ item }}
+        </option>
+      </select>
+      <label for="itemStatus">Status </label>
+
+      <select id="itemStatus" v-model="completedFilter" name="pageSize">
+        <option value="null">all</option>
+        <option :value="true">Completed</option>
+        <option :value="false">Not completed</option>
+      </select>
+    </div>
+
+    <todo-list :items-list="paginatedList"></todo-list>
+    <the-pagination
+      v-bind="pagination"
+      :total-pages="totalPages"
+      :page-changed="handlePageChanged"
+      :content-class="'pagination-wrapper'"
+    ></the-pagination>
   </div>
 </template>
 
 <script>
+import ThePagination from '~/components/ThePagination.vue'
+import TodoList from '~/components/TodoList.vue'
 export default {
   name: 'IndexPage',
+  components: { ThePagination, TodoList },
+  async asyncData({ error }) {
+    const todoList = await fetch('https://jsonplaceholder.typicode.com/todos')
+      .then((result) => result.json())
+      .catch((err) => {
+        error(err)
+      })
+    return { todoList }
+  },
+  data() {
+    return {
+      todoList: [],
+      searchQuery: '',
+      itemsPerPage: [5, 10, 20],
+      completedFilter: null,
+      pagination: {
+        currentPage: 1,
+        maxVisibleButtons: 3,
+        pageSize: 5,
+      },
+    }
+  },
+
+  computed: {
+    filteredList() {
+      return this.todoList.filter((todo) => {
+        if (this.completedFilter !== null) {
+          return (
+            todo.title.includes(this.searchQuery) &&
+            todo.completed === this.completedFilter
+          )
+        }
+        return todo.title.includes(this.searchQuery.trim())
+      })
+    },
+    paginatedList() {
+      const offset = this.pagination.currentPage - 1
+      const start = offset * this.pagination.pageSize
+      const end = start + this.pagination.pageSize
+      return this.filteredList.slice(start, end)
+    },
+    totalPages() {
+      return Math.ceil(this.filteredList.length / this.pagination.pageSize)
+    },
+  },
+  methods: {
+    handlePageChanged(page) {
+      this.pagination.currentPage = page
+    },
+  },
 }
 </script>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.container {
+  width: 1200px;
+  margin: 0 auto;
+  padding: 90px;
+  .pagination-wrapper:deep {
+    margin: 0 auto;
+  }
+}
+</style>
